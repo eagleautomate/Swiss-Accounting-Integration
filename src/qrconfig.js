@@ -1,5 +1,4 @@
 /*! *****************************************************************************
-Copyright (c) Grynn GmbH. All rights reserved.
 Licensed under the GPL, Version 3.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
 License at https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -20,8 +19,8 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
  * @param {Object} companyAddress Company Address
  * @param {String} companyAddressCode ALPHA-2 Address Code
  * @param {String} iban QR-IBAN
- * @param {String} customer Customer Name
- * @param {Object} customerAddress Customer Address
+ * @param {String} customer Customer Name, max 70 Chars, rest will be removed
+ * @param {Object} customerAddress Customer Address, max 70 Chars, rest will be removed
  * @param {String} customerAddressCode Customer Address Code
  * @returns Address Configuration
  */
@@ -42,15 +41,17 @@ export const generateQRConfig = (
   reference,
   creditor: {
     name: company, //
-    address: ((companyAddress.address_line2 != null) ? `${companyAddress.address_line1} ${companyAddress.address_line2}` : companyAddress.address_line1), // Address Line 1 & line 2
+    address: companyAddress.address_line1.substring(0, 70),
+    buildingNumber: companyAddress.address_line2 != null ? companyAddress.address_line2.substring(0,16) : undefined, // Optional Address line2, according to Type "S" specification
     zip: parseInt(companyAddress.pincode), // Bank Account  Code
     city: companyAddress.city, // Bank Account City
     account: iban, // Bank Account Iban
     country: companyAddressCode, // Bank Country
   },
   debtor: {
-    name: customer, // Customer Doctype
-    address: ((customerAddress.address_line2 != null) ? `${customerAddress.address_line1} ${customerAddress.address_line2}` :  customerAddress.address_line1), // Address Line 1 & 2
+    name: customer.substring(0, 70), // Customer Doctype,
+    address: customerAddress.address_line1.substring(0, 70),
+    buildingNumber: customerAddress.address_line2 != null ? customerAddress.address_line2.substring(0,16) : undefined, // Optional Address line2, according to Type "S" specification
     zip: customerAddress.pincode, // Sales Invoice PCode
     city: customerAddress.city, // Sales Invoice City
     country: customerAddressCode, // Sales Invoice Country
