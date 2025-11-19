@@ -13,7 +13,8 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 /**
  * Parses address line to extract street name and house number
  * According to Swiss QR Bill Type "S" specification
- * @param {String} addressLine Full address line (e.g., "Musterstrasse 28" or "28 Musterstrasse")
+ * Handles formats like: "Balfrinstrasse 13", "Balfrinstrasse 13 Trial", "28 Musterstrasse"
+ * @param {String} addressLine Full address line from ERPNext
  * @returns {Object} { street: string, houseNumber: string }
  */
 const parseAddressLine = (addressLine) => {
@@ -23,14 +24,16 @@ const parseAddressLine = (addressLine) => {
 
   const trimmedAddress = addressLine.trim();
 
-  // Pattern 1: Number at the end (e.g., "Musterstrasse 28", "Grosse Marktgasse 28")
-  const patternNumberAtEnd = /^(.+?)\s+(\d+[a-zA-Z]?)$/;
-  const matchEnd = trimmedAddress.match(patternNumberAtEnd);
+  // Pattern 1: Street name followed by number (optionally followed by more text)
+  // Examples: "Balfrinstrasse 13", "Balfrinstrasse 13 Trial", "Musterstrasse 28"
+  // Captures: street name + first number found, ignores text after number
+  const patternStreetNumber = /^(.+?)\s+(\d+[a-zA-Z]?)\b/;
+  const matchStreetNumber = trimmedAddress.match(patternStreetNumber);
 
-  if (matchEnd) {
+  if (matchStreetNumber) {
     return {
-      street: matchEnd[1].trim(),
-      houseNumber: matchEnd[2].trim()
+      street: matchStreetNumber[1].trim(),
+      houseNumber: matchStreetNumber[2].trim()
     };
   }
 
