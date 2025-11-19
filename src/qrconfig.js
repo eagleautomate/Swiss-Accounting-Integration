@@ -85,15 +85,27 @@ export const generateQRConfig = (
   const companyParsed = parseAddressLine(companyAddress.address_line1);
   const companyStreet = companyParsed.street.substring(0, 70);
   // Use parsed house number, or fallback to address_line2 if available
-  const companyHouseNumber = companyParsed.houseNumber ||
-    (companyAddress.address_line2 ? companyAddress.address_line2.substring(0, 16) : "");
+  // IMPORTANT: Must be undefined (not empty string) if no house number exists for Type "S" to work
+  let companyHouseNumber = companyParsed.houseNumber;
+  if (!companyHouseNumber && companyAddress.address_line2) {
+    companyHouseNumber = companyAddress.address_line2.substring(0, 16);
+  }
+  if (!companyHouseNumber) {
+    companyHouseNumber = undefined;
+  }
 
   // Parse customer address to extract street and house number for Type "S" structured address
   const customerParsed = parseAddressLine(customerAddress.address_line1);
   const customerStreet = customerParsed.street.substring(0, 70);
   // Use parsed house number, or fallback to address_line2 if available
-  const customerHouseNumber = customerParsed.houseNumber ||
-    (customerAddress.address_line2 ? customerAddress.address_line2.substring(0, 16) : "");
+  // IMPORTANT: Must be undefined (not empty string) if no house number exists for Type "S" to work
+  let customerHouseNumber = customerParsed.houseNumber;
+  if (!customerHouseNumber && customerAddress.address_line2) {
+    customerHouseNumber = customerAddress.address_line2.substring(0, 16);
+  }
+  if (!customerHouseNumber) {
+    customerHouseNumber = undefined;
+  }
 
   return {
     currency,
