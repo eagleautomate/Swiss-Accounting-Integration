@@ -11,6 +11,48 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 ***************************************************************************** */
 
 /**
+ * Parses address line to extract street name and building number
+ * According to Swiss QR Bill Type "S" specification
+ * @param {String} addressLine Full address line (e.g., "Musterstrasse 28" or "28 Musterstrasse")
+ * @returns {Object} { street: string, buildingNumber: string }
+ */
+const parseAddressLine = (addressLine) => {
+  if (!addressLine || addressLine.trim() === "") {
+    return { street: "", buildingNumber: "" };
+  }
+
+  const trimmedAddress = addressLine.trim();
+
+  // Pattern 1: Number at the end (e.g., "Musterstrasse 28", "Grosse Marktgasse 28")
+  const patternNumberAtEnd = /^(.+?)\s+(\d+[a-zA-Z]?)$/;
+  const matchEnd = trimmedAddress.match(patternNumberAtEnd);
+
+  if (matchEnd) {
+    return {
+      street: matchEnd[1].trim(),
+      buildingNumber: matchEnd[2].trim()
+    };
+  }
+
+  // Pattern 2: Number at the beginning (e.g., "28 Musterstrasse")
+  const patternNumberAtStart = /^(\d+[a-zA-Z]?)\s+(.+)$/;
+  const matchStart = trimmedAddress.match(patternNumberAtStart);
+
+  if (matchStart) {
+    return {
+      street: matchStart[2].trim(),
+      buildingNumber: matchStart[1].trim()
+    };
+  }
+
+  // No number found - return entire address as street
+  return {
+    street: trimmedAddress,
+    buildingNumber: ""
+  };
+};
+
+/**
  * Creates Address Configuration
  * @param {String} currency CHF | EUR
  * @param {*} amount Amount To Pay
@@ -35,25 +77,41 @@ export const generateQRConfig = (
   customerAddress,
   customerAddressCode,
   reference
-) => ({
-  currency,
-  amount,
-  reference,
-  creditor: {
-    name: company, //
-    address: companyAddress.address_line1.substring(0, 70),
-    buildingNumber: companyAddress.address_line2 != null ? companyAddress.address_line2.substring(0,16) : undefined, // Optional Address line2, according to Type "S" specification
-    zip: parseInt(companyAddress.pincode), // Bank Account  Code
-    city: companyAddress.city, // Bank Account City
-    account: iban, // Bank Account Iban
-    country: companyAddressCode, // Bank Country
-  },
-  debtor: {
-    name: customer.substring(0, 70), // Customer Doctype,
-    address: customerAddress.address_line1.substring(0, 70),
-    buildingNumber: customerAddress.address_line2 != null ? customerAddress.address_line2.substring(0,16) : undefined, // Optional Address line2, according to Type "S" specification
-    zip: customerAddress.pincode, // Sales Invoice PCode
-    city: customerAddress.city, // Sales Invoice City
-    country: customerAddressCode, // Sales Invoice Country
-  },
-});
+) => {
+  // Parse company address to extract street and building number for Type "S" structured address
+  const companyParsed = parseAddressLine(companyAddress.address_line1);
+  const companyStreet = companyParsed.street.substring(0, 70);
+  // Use parsed building number, or fallback to address_line2 if available
+  const companyBuildingNumber = companyParsed.buildingNumber ||
+    (companyAddress.address_line2 ? companyAddress.address_line2.substring(0, 16) : undefined);
+
+  // Parse customer address to extract street and building number for Type "S" structured address
+  const customerParsed = parseAddressLine(customerAddress.address_line1);
+  const customerStreet = customerParsed.street.substring(0, 70);
+  // Use parsed building number, or fallback to address_line2 if available
+  const customerBuildingNumber = customerParsed.buildingNumber ||
+    (customerAddress.address_line2 ? customerAddress.address_line2.substring(0, 16) : undefined);
+
+  return {
+    currency,
+    amount,
+    reference,
+    creditor: {
+      name: company,
+      address: companyStreet, // Street name only (Type "S" structured)
+      buildingNumber: companyBuildingNumber, // Building number only (Type "S" structured)
+      zip: parseInt(companyAddress.pincode), // Bank Account Code
+      city: companyAddress.city, // Bank Account City
+      account: iban, // Bank Account Iban
+      country: companyAddressCode, // Bank Country
+    },
+    debtor: {
+      name: customer.substring(0, 70), // Customer Doctype
+      address: customerStreet, // Street name only (Type "S" structured)
+      buildingNumber: customerBuildingNumber, // Building number only (Type "S" structured)
+      zip: customerAddress.pincode, // Sales Invoice PCode
+      city: customerAddress.city, // Sales Invoice City
+      country: customerAddressCode, // Sales Invoice Country
+    },
+  };
+};
