@@ -11,14 +11,14 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 ***************************************************************************** */
 
 /**
- * Parses address line to extract street name and building number
+ * Parses address line to extract street name and house number
  * According to Swiss QR Bill Type "S" specification
  * @param {String} addressLine Full address line (e.g., "Musterstrasse 28" or "28 Musterstrasse")
- * @returns {Object} { street: string, buildingNumber: string }
+ * @returns {Object} { street: string, houseNumber: string }
  */
 const parseAddressLine = (addressLine) => {
   if (!addressLine || addressLine.trim() === "") {
-    return { street: "", buildingNumber: "" };
+    return { street: "", houseNumber: "" };
   }
 
   const trimmedAddress = addressLine.trim();
@@ -30,7 +30,7 @@ const parseAddressLine = (addressLine) => {
   if (matchEnd) {
     return {
       street: matchEnd[1].trim(),
-      buildingNumber: matchEnd[2].trim()
+      houseNumber: matchEnd[2].trim()
     };
   }
 
@@ -41,14 +41,14 @@ const parseAddressLine = (addressLine) => {
   if (matchStart) {
     return {
       street: matchStart[2].trim(),
-      buildingNumber: matchStart[1].trim()
+      houseNumber: matchStart[1].trim()
     };
   }
 
   // No number found - return entire address as street
   return {
     street: trimmedAddress,
-    buildingNumber: ""
+    houseNumber: ""
   };
 };
 
@@ -78,19 +78,19 @@ export const generateQRConfig = (
   customerAddressCode,
   reference
 ) => {
-  // Parse company address to extract street and building number for Type "S" structured address
+  // Parse company address to extract street and house number for Type "S" structured address
   const companyParsed = parseAddressLine(companyAddress.address_line1);
   const companyStreet = companyParsed.street.substring(0, 70);
-  // Use parsed building number, or fallback to address_line2 if available
-  const companyBuildingNumber = companyParsed.buildingNumber ||
-    (companyAddress.address_line2 ? companyAddress.address_line2.substring(0, 16) : undefined);
+  // Use parsed house number, or fallback to address_line2 if available
+  const companyHouseNumber = companyParsed.houseNumber ||
+    (companyAddress.address_line2 ? companyAddress.address_line2.substring(0, 16) : "");
 
-  // Parse customer address to extract street and building number for Type "S" structured address
+  // Parse customer address to extract street and house number for Type "S" structured address
   const customerParsed = parseAddressLine(customerAddress.address_line1);
   const customerStreet = customerParsed.street.substring(0, 70);
-  // Use parsed building number, or fallback to address_line2 if available
-  const customerBuildingNumber = customerParsed.buildingNumber ||
-    (customerAddress.address_line2 ? customerAddress.address_line2.substring(0, 16) : undefined);
+  // Use parsed house number, or fallback to address_line2 if available
+  const customerHouseNumber = customerParsed.houseNumber ||
+    (customerAddress.address_line2 ? customerAddress.address_line2.substring(0, 16) : "");
 
   return {
     currency,
@@ -99,7 +99,7 @@ export const generateQRConfig = (
     creditor: {
       name: company,
       address: companyStreet, // Street name only (Type "S" structured)
-      buildingNumber: companyBuildingNumber, // Building number only (Type "S" structured)
+      houseNumber: companyHouseNumber, // House number only (Type "S" structured)
       zip: parseInt(companyAddress.pincode), // Bank Account Code
       city: companyAddress.city, // Bank Account City
       account: iban, // Bank Account Iban
@@ -108,7 +108,7 @@ export const generateQRConfig = (
     debtor: {
       name: customer.substring(0, 70), // Customer Doctype
       address: customerStreet, // Street name only (Type "S" structured)
-      buildingNumber: customerBuildingNumber, // Building number only (Type "S" structured)
+      houseNumber: customerHouseNumber, // House number only (Type "S" structured)
       zip: customerAddress.pincode, // Sales Invoice PCode
       city: customerAddress.city, // Sales Invoice City
       country: customerAddressCode, // Sales Invoice Country
