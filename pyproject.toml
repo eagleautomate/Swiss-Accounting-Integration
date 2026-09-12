@@ -1,0 +1,31 @@
+[project]
+name = "swiss_accounting_integration"
+authors = [
+    { name = "Grynn", email = "paideepak@gmail.com" }
+]
+description = "ERPNexts functionality with Swiss QR Integration and Abacus Export"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    # "frappe" is installed and managed by bench — never declare it here.
+    # Doing so makes uv resolve frappe's metadata, which carries a PyPika
+    # git URL dependency, and uv rejects transitively-inherited URL deps.
+    "PyPDF4",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+# Frappe/ERPNext compatibility range, enforced by bench rather than pip.
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+erpnext = ">=15.0.0,<17.0.0"
+
+# These dependencies are only installed when developer mode is enabled
+[tool.bench.dev-dependencies]
+
+# These apt dependencies will be installed from Ubuntu repositories when you host your app on Frappe Cloud
+[deploy.dependencies.apt]
+packages = []
